@@ -49,7 +49,7 @@ out/
 .history/
 redis/
 redis/data/
-src/main/resources/**.json
+backend/src/main/resources/**.json
 
 # =====================
 # Node / React
