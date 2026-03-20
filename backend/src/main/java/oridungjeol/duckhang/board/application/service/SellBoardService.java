@@ -65,27 +65,23 @@ public class SellBoardService implements BoardUseCase {
         return savedBoard.getId();
     }
 
-
     @Override
-    @Transactional(readOnly = true)
-    public Page<BoardListResponseDto> getAllBoards(BoardType boardType, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<Board> boards = boardRepository.findAllByBoardType(boardType, pageable);
+	@Transactional(readOnly = true)
+	public Page<BoardListResponseDto> getAllBoards(BoardType boardType, int page, int size) {
+		Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+		Page<Board> boards = boardRepository.findAllByBoardType(boardType, pageable);
 
-        List<BoardListResponseDto> dtoList = boards.stream()
-                .map(board -> {
-                    SellPost sellPost = sellRepository.findByBoardId(board.getId())
-                            .orElseThrow(() -> new EntityNotFoundException("Sell not found"));
+		List<BoardListResponseDto> dtoList = boards.stream()
+				.map(board -> {
+					SellPost sellPost = sellRepository.findByBoardId(board.getId())
+							.orElseThrow(() -> new EntityNotFoundException("Sell not found"));
+					// ✅ User 조회 삭제 — toTradeListDto에서 사용하지 않음
+					return SellDtoMapper.toTradeListDto(board, sellPost);
+				})
+				.toList();
 
-                    User user = userJpaRepository.findByUuid(board.getAuthorUuid())
-                            .orElseThrow(() -> new EntityNotFoundException("User not found"));
-
-                    return SellDtoMapper.toTradeListDto(board, sellPost);
-                })
-                .toList();
-
-        return new PageImpl<>(dtoList, pageable, boards.getTotalElements());
-    }
+		return new PageImpl<>(dtoList, pageable, boards.getTotalElements());
+	}
 
     @Override
     @Transactional(readOnly = true)

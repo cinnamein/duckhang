@@ -21,16 +21,16 @@ import java.util.UUID;
 public class MyPageService implements MyPageUseCase {
     private final BoardRepository boardRepository;
     private final UserJpaRepository userJpaRepository;
+
     @Override
     public List<BoardListResponseDto> getAllUserBoards(UUID userId) {
-        List<Board> boards = boardRepository.findAllByAuthorUuid(userId); // 모든 타입
+        User user = userJpaRepository.findByUuid(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        List<Board> boards = boardRepository.findAllByAuthorUuid(userId);
 
         return boards.stream()
-                .map(board -> {
-                    User user = userJpaRepository.findByUuid(board.getAuthorUuid())
-                            .orElseThrow(() -> new EntityNotFoundException("User not found"));
-                    return BoardDtoMapper.toBoardListDto(board, user);
-                })
+                .map(board -> BoardDtoMapper.toBoardListDto(board, user))
                 .sorted(Comparator.comparing(BoardListResponseDto::createdAt).reversed())
                 .toList();
     }

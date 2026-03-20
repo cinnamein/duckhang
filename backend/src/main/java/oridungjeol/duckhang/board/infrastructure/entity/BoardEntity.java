@@ -8,7 +8,10 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
-@Table(name = "board")
+@Table(name = "board", indexes = {
+    @Index(name = "idx_board_type_created", columnList = "boardType, createdAt"),
+    @Index(name = "idx_board_author_created", columnList = "authorUuid, createdAt")
+})
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
