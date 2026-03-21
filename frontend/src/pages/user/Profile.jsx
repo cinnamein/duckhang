@@ -19,25 +19,24 @@ export default function Profile() {
   const [editMode, setEditMode] = useState(false);
 
   useEffect(() => {
-    axios.get(`http://localhost/api/user/${userId}`, { withCredentials: true })
-      .then(res => {
-        setProfile(res.data);
-      });
+    const fetchAll = async () => {
+        try {
+            const [profileRes, postsRes, reviewsRes] = await Promise.all([
+                axios.get(`http://localhost/api/user/${userId}`, { withCredentials: true }),
+                axios.get(`http://localhost/api/board/user/${userId}`, { withCredentials: true }),
+                axios.get(`http://localhost/api/review/${userId}?pageNumber=0&pageSize=10`, { withCredentials: true }),
+            ]);
 
-    axios.get(`http://localhost/api/board/user/${userId}`, { withCredentials: true })
-      .then(res => setPosts(res.data));
-
-    console.log(userId)
-    axios.get(`http://localhost/api/review/${userId}?pageNumber=0&pageSize=10`, { withCredentials: true })
-      .then(res => {
-        setReviews(res.data);
-        if (res.data && res.data.length > 0) {
-          const totalScope = res.data.reduce((sum, review) => sum + review.scope, 0);
-          const averageScope = totalScope / res.data.length;
-          setProfile(prev => ({ ...prev, scope: averageScope }));
+            setProfile(profileRes.data);
+            setPosts(postsRes.data);
+            setReviews(reviewsRes.data);
+        } catch (error) {
+            console.error('프로필 데이터 로딩 실패:', error);
         }
-      });
-  }, [userId]);
+    };
+
+    fetchAll();
+}, [userId]);
 
   if (!profile) return <div>Loading...</div>;
 

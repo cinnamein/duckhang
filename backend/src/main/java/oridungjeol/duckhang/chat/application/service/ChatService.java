@@ -48,10 +48,11 @@ public class ChatService {
     private final ChatESRepositoryNative chatESRepositoryNative;
 
     private final FirebaseStorageService firebaseStorageService;
+    private final FraudDetectionService fraudDetectionService;
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
-    public ChatService(SimpMessagingTemplate simpMessagingTemplate, ChatESRepository chatESRepository, ChatMapper chatMapper, JwtParser jwtParser, ChatRoomMapper chatRoomMapper, ChatRepository chatRepository, ChatParticipantRepository chatParticipantRepository, UserJpaRepository userJpaRepository, ChatESRepositoryNative chatESRepositoryNative, FirebaseStorageService firebaseStorageService) {
+    public ChatService(SimpMessagingTemplate simpMessagingTemplate, ChatESRepository chatESRepository, ChatMapper chatMapper, JwtParser jwtParser, ChatRoomMapper chatRoomMapper, ChatRepository chatRepository, ChatParticipantRepository chatParticipantRepository, UserJpaRepository userJpaRepository, ChatESRepositoryNative chatESRepositoryNative, FirebaseStorageService firebaseStorageService, FraudDetectionService fraudDetectionService) {
         this.simpMessagingTemplate = simpMessagingTemplate;
         this.chatESRepository = chatESRepository;
         this.chatMapper = chatMapper;
@@ -61,6 +62,7 @@ public class ChatService {
         this.userJpaRepository = userJpaRepository;
         this.chatESRepositoryNative = chatESRepositoryNative;
         this.firebaseStorageService = firebaseStorageService;
+        this.fraudDetectionService = fraudDetectionService;
     }
 
     /**
@@ -86,25 +88,7 @@ public class ChatService {
         }
 
         if (message.getType() == MessageType.TEXT) {
-            FraudType response = filterFraud(message.getContent());
-
-            if (response != FraudType.NOT_FRAUD) {
-                Chat warnning = Chat.builder()
-                        .type(MessageType.WARNNING)
-                        .author_uuid(message.getAuthor_uuid())
-                        .content(String.valueOf(response))
-                        .created_at(LocalDateTime.now())
-                        .room_id(message.getRoom_id())
-                        .build();
-
-                //save
-                ChatDocument chatDocument = chatMapper.toChatDocument(warnning);
-                chatESRepository.save(chatDocument);
-
-                //websocket - broadcast
-                String destination = "/topic/chat/" + message.getRoom_id();
-                simpMessagingTemplate.convertAndSend(destination, warnning);
-            }
+            fraudDetectionService.detectAsync(message);
         }
     }
 
